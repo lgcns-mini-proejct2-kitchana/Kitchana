@@ -13,7 +13,7 @@ services:
     networks:
       - kitcha_network
     healthcheck:
-      test: [ "CMD", "mysqladmin", "-u", "${MYSQL_USER}","-p${MYSQL_PASSWORD}", "ping", "-h", "localhost" ]
+      test: [ "CMD", "mysqladmin", "-u", "${MYSQL_USER}", "-p${MYSQL_PASSWORD}", "ping", "-h", "localhost" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -111,7 +111,7 @@ services:
 
   article:
     build:
-      context: /Users/juyoung/Desktop/Programming/Kitcha-Article
+      context: https://github.com/Team4-Kitcha/Kitcha-Article.git
     environment:
       NAVER_CLIENT_ID: ${NAVER_CLIENT_ID}
       NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET}
@@ -166,6 +166,7 @@ services:
 
 volumes:
   mysql_data:
+
 
 networks:
   kitcha_network:
