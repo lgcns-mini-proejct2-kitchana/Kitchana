@@ -94,6 +94,8 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TOKEN_SECRET: ${TOKEN_SECRET}
       TOKEN_EXPIRATION_TIME: ${TOKEN_EXPIRATION_TIME}
+      TEST_USER_PASSWORD: ${TEST_USER_PASSWORD}
+      TEST_ADMIN_PASSWORD: ${TEST_ADMIN_PASSWORD}
     container_name: auth
     networks:
       - kitcha_network
