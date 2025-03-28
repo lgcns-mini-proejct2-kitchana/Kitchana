@@ -43,6 +43,24 @@ services:
       - "3308:3306"
     restart: on-failure
 
+  rabbitmq:
+    image: rabbitmq:4.0-management
+    container_name: rabbitmq
+    ports:
+      - "5671:5671"
+      - "15671:15671"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - kitchana_network
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: on-failure
+
   config-server:
     image: kitchana/config
     build:
@@ -56,13 +74,15 @@ services:
       interval: 20s
       timeout: 10s
       retries: 3
-    expose:
-      - "8071"
+    ports:
+      - "8071:8071"
     depends_on:
       mysql_auth:
         condition: service_started
       mysql_board:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     restart: on-failure
 
   eureka:
@@ -106,6 +126,8 @@ services:
     depends_on:
       config-server:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: on-failure
 
   auth:
@@ -137,6 +159,8 @@ services:
         condition: service_healthy
       gateway-server:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: on-failure
 
   article:
@@ -156,6 +180,8 @@ services:
       eureka:
         condition: service_healthy
       gateway-server:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     restart: on-failure
 
@@ -178,6 +204,8 @@ services:
       eureka:
         condition: service_healthy
       gateway-server:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     restart: on-failure
 
