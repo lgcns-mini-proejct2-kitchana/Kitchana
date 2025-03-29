@@ -1,0 +1,142 @@
+services:
+  mysql_auth:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_AUTH_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_AUTH_DATABASE}
+      MYSQL_USER: ${MYSQL_AUTH_USER}
+      MYSQL_PASSWORD: ${MYSQL_AUTH_PASSWORD}
+    container_name: mysql_auth
+    volumes:
+      - mysql_data_auth:/var/lib/mysql
+      - /sys/fs/cgroup
+    networks:
+      - kitchana_network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "-u", "${MYSQL_AUTH_USER}","-p${MYSQL_AUTH_PASSWORD}", "ping", "-h", "localhost" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "3307:3306"
+    restart: on-failure
+
+  mysql_board:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_BOARD_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_BOARD_DATABASE}
+      MYSQL_USER: ${MYSQL_BOARD_USER}
+      MYSQL_PASSWORD: ${MYSQL_BOARD_PASSWORD}
+    container_name: mysql_board
+    volumes:
+      - mysql_data_board:/var/lib/mysql
+      - /sys/fs/cgroup
+    networks:
+      - kitchana_network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "-u", "${MYSQL_BOARD_USER}","-p${MYSQL_BOARD_PASSWORD}", "ping", "-h", "localhost" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "3308:3306"
+    restart: on-failure
+
+  rabbitmq:
+    image: rabbitmq:4.0-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - kitchana_network
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: on-failure
+
+  config-server:
+    image: kitchana/config
+    build:
+      context: https://github.com/lgcns-mini-proejct2-kitchana/Kitchana-BE.git
+      dockerfile: Config-server/Dockerfile
+    container_name: config-server
+    networks:
+      - kitchana_network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8071/actuator/health" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "8071:8071"
+    depends_on:
+      mysql_auth:
+        condition: service_started
+      mysql_board:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  eureka:
+    image: kitchana/eureka
+    build:
+      context: https://github.com/lgcns-mini-proejct2-kitchana/Kitcha-BE.git
+      dockerfile: eureka/Dockerfile
+    container_name: eureka
+    networks:
+      - kitchana_network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "8761:8761"
+    depends_on:
+      config-server:
+        condition: service_healthy
+    restart: on-failure
+
+  gateway-server:
+    image: kitchana/gateway
+    build:
+      context: https://github.com/lgcns-mini-proejct2-kitchana/Kitchana-BE.git
+      dockerfile: API-Gateway/Dockerfile
+    environment:
+      TOKEN_SECRET: ${TOKEN_SECRET}
+      FRONTEND_SERVER: ${FRONTEND_SERVER}
+    container_name: gateway-server
+    networks:
+      - kitchana_network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8072/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "8072:8072"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+volumes:
+  mysql_data_auth:
+  mysql_data_board:
+
+networks:
+  kitchana_network:
+    name: kitchana_network
+
+  networks:
+    - kafka_network
