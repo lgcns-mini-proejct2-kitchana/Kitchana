@@ -137,6 +137,3 @@ volumes:
 networks:
   kitchana_network:
     name: kitchana_network
-
-  networks:
-    - kafka_network
